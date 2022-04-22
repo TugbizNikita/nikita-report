@@ -352,8 +352,8 @@ def validate_candidates(request):
             candidate_df = read_candidates(i)
             col_headers = candidate_df.columns
             
-            config_headers = ['Candidate name', 'Candidate Mobile No.', 'Candidate Registered Email ID', 'EMP ID', 'Email ID', 'Week_No_DO',
-                            	'Drop_Out', 'Drop_Out_Date', 'Week_No_TI',	'Transfer_In', 'Week_No_TO', 'Transfer_Out','CR','Superset ID']
+            config_headers = ['Candidate name', 'Candidate Mobile No.', 'Candidate Registered Email ID', 'EMP ID/Superset ID', 'Email ID', 'Week_No_DO',
+                            	'Drop_Out', 'Drop_Out_Date', 'Week_No_TI',	'Transfer_In', 'Week_No_TO', 'Transfer_Out','CR']
 
             diff_col = set(config_headers) - set(col_headers)
             diff_col_list = list(diff_col)

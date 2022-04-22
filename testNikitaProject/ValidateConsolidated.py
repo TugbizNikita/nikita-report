@@ -63,7 +63,7 @@ def validate_consolidated(file_name):
     data = full_data[1:]
     headers = full_data[0]
     B_info_df = pd.DataFrame(data, columns=headers)
-
+    NV_Stats_1 = {}
     if('Vendor' in B_info_df):
         col_headers = B_info_df['Vendor']
         config_headers = ['LOT', 'Variant','Batch Name','CFMG Code', 'Type','Location','Start Date', 'End Date','Total','Drop out', 'Status']
@@ -74,18 +74,23 @@ def validate_consolidated(file_name):
             return JsonResponse({'Column name missing': diff_col_list})
         else:
             T_Info = read_Tinfo(file, 'T_Info')
-            print("T_info status", T_Info)
-            if T_Info['status'] == 'Success':
-                return 'T_info correct'
-            else:
+            if T_Info['status'] != 'Success':
                 return T_Info
+            else:
+                NV_Stats = {'NV1': None, 'NV2': None, 'NV3': None, 'NV4': None,
+                'NV5': None, 'NV6': None, 'NV7': None, 'NV8': None}
+                nv_all_exam_data = pd.DataFrame()
+                for i in NV_Stats:
+                    NV_Stats_1[i] = read_nv_report(file.worksheet(i), i)
+                print("NV_Stats_1", NV_Stats_1)
+                for i in NV_Stats_1:
+                      if NV_Stats_1['status'] != 'Success':
+                        return NV_Stats_1
+                      else:
+                          return 'NV sheets are correct'
+
     else:
         return 'Vendor name is missing'
-    NV_Stats = {'NV1': None, 'NV2': None, 'NV3': None, 'NV4': None,
-                'NV5': None, 'NV6': None, 'NV7': None, 'NV8': None}
-    nv_all_exam_data = pd.DataFrame()
-    for i in NV_Stats:
-        NV_Stats[i] = read_nv_report(file.worksheet(i), i)
     
 
 def read_Tinfo(file, sheet_name):
@@ -119,4 +124,14 @@ def read_nv_report(sheet,exam_name):
         return {'Result': 'Result Not Available', 'Exam Details': exam_details}
     data = full_data[10:]
     headers = full_data[9]
-    df = pd.DataFrame(data, columns=headers)
+    NV_df = pd.DataFrame(data, columns=headers)
+
+    col_headers = headers
+    config_headers = ['Email Id','Percentage']
+
+    diff_col = set(config_headers) - set(col_headers)
+    diff_col_list = list(diff_col)
+    if(len(diff_col_list) > 0):
+        return {'status': 'Failure','Column name missing':diff_col_list}
+    else:
+        return {'status': 'Success'}

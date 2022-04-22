@@ -32,7 +32,7 @@ urlpatterns = [
     path('wpr_stats/', wpr_stats_comm),
     path('attendance_stats/', attendance_stats),
     path('student_all_data/', student_all_data),
-    path('validateWSR/', validate_wsr),
+    #path('validateWSR/', validate_wsr),
     path('validateConsolidated/',validate_consolidated_sheet),
     path('leadership/',leadership),
     

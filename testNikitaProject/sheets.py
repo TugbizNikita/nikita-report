@@ -102,16 +102,50 @@ def read_wpa_report(file_name, download):
     headers = full_data[1]
     df = pd.DataFrame(data, columns=headers)
     avg_technical_week_wise = {}
-    above_avg_technical_week_wise = {}
-    below_avg_technical_week_wise = {}
+    student_technical_avg = {}
+    studentTechAvg = {}
+    week_no = 0
+    Above_Average = 0
+    Average = 0
+    Below_Average = 0
+    NA=0
+    #ranges = [0,2,3,5]
+
     # print(headers)
 
     for i in headers:
         if i.endswith('-Technical'):
             avg_technical_week_wise[i] = round(df[df[i].apply(lambda x: x.isnumeric())][i].apply(pd.to_numeric).mean(), 2)#todo..check this logic error in b7w3
 
+    student_trainer_data = pd.DataFrame()
+    student_trainer_data = df[['Email ID']].copy()
+    for i in headers:
+         if i.endswith('-Technical'):
+            student_technical_avg = df[['Email ID', i]].copy()
+            student_trainer_data = pd.merge(student_trainer_data, student_technical_avg, on='Email ID', how='left')
+            week_no+=1
+    cols = student_trainer_data.columns.drop('Email ID')
+    student_trainer_data[cols] = student_trainer_data[cols].apply(pd.to_numeric, errors='coerce')
+    student_trainer_data['studentTechAvg'] = round(student_trainer_data.mean(axis=1), 2)
+    student_trainer_data = student_trainer_data[['Email ID', 'studentTechAvg']].copy()
+    student_trainer_data = student_trainer_data.to_dict('records')
+    student_trainer_data = pd.DataFrame(student_trainer_data)
+    df = pd.merge(df, student_trainer_data, on='Email ID', how='left')
+
+    # count = df['studentTechAvg'].groupby(pd.cut(df['studentTechAvg'], ranges)).count()
+    # print("count",count)
+    for i in student_trainer_data['studentTechAvg']:
+        if((float(i) >= 0) and (float(i) < 3)):
+            Below_Average+=1
+        elif((float(i) == 3)):
+            Average+=1
+        elif((float(i) > 3) and (float(i) <= 5)):
+            Above_Average+=1
+        else:
+            NA+=0
+
     Weekly_avg_df = pd.DataFrame(avg_technical_week_wise.items(),columns=['Week','Marks'])
-    Weekly_avg_df2 = Weekly_avg_df['Marks'].mean(axis='index')   
+    Weekly_avg_df2 = Weekly_avg_df['Marks'].mean(axis='index')
     #df.to_csv('L18_WPR.csv', index = False)
     if download == True:
         CFMG_Code = df['CFMG Batch Code']
@@ -120,7 +154,7 @@ def read_wpa_report(file_name, download):
         result = {'wpr_data_df': df, 'sheet_name': CFMG_Code}
     else:
         #df = df.rename({'CFMG_Code': 'CFMG Batch Code'}, axis=1)
-        result = {'weeklyAvgStats': avg_technical_week_wise, 'allData': df.to_dict('records'), 'batchTechAvg':Weekly_avg_df2.round(2)}
+        result = {'weeklyAvgStats': avg_technical_week_wise, 'allData': df.to_dict('records'), 'batchTechAvg':Weekly_avg_df2.round(2), "Below_Average":Below_Average, "Average":Average, "Above_Average":Above_Average}
 
     
     # print(avg_technical_week_wise)
