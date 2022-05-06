@@ -197,16 +197,18 @@ def leader_point(file_name):
     
     all_data_df.to_csv('marks.csv', index = False)
 
-    client = MongoClient("mongodb://aditya:aditya@3.236.147.116:27017/admin")
+    client = MongoClient("mongodb://aditya:aditya@44.199.59.134:27017/admin")
     mydb = client["TestPrepnovelvista"]
-    mycol = mydb["Users"]
+    mycol = mydb["ActivityDescripter"]
     all_data = result
     for x in all_data:
         x['leader_point'] = round(x['leader_point'])
-        loginId1 = re.compile('.*x["Candidate Registered Email ID"].*', re.IGNORECASE)
-        print("loginId1",loginId1)
+        loginId = x['Candidate Registered Email ID']
+        # loginId1 = re.compile('.*x["Candidate Registered Email ID"].*', re.IGNORECASE)
+        print("loginId1",loginId)
         updateData = { "leadershipPoints" : x['leader_point']}
-        mycol.update_one({'loginId': loginId1}, {"$set" : updateData})
+        print("loginId1",updateData)
+        mycol.update_one({'loginId': loginId}, {"$set" : updateData})
         #mycol.update_one({'loginId': x['Candidate Registered Email ID']}, {"$set" : updateData})
     print("leadership point upadted for",file_name)
     

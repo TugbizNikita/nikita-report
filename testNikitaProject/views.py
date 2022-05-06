@@ -11,6 +11,8 @@ from .studentAllData import read_consolidated_report_new
 from .Validation import validateWSR
 from .ValidateConsolidated import validate_consolidated
 from .leadership import leader_point
+from .gamificationRegistration import gamification_registration, gamification_login
+from .readSheet import read_sheet
 
 def index(request):
     file_name = request.GET.get('file-name')
@@ -417,3 +419,27 @@ def leadership(request):
     with BytesIO() as b:
         leader_point_df = leader_point(file_name)
         return JsonResponse({'Sucess':'Leaderpoint updated'})
+
+
+def gamification_registration1(request):
+    file_name = request.GET.get('file-name')
+    print(file_name)
+    with BytesIO() as b:
+        gamification_registration_df = gamification_registration(file_name)
+        return JsonResponse({'Success':gamification_registration_df})
+
+def gamification_login1(request):
+    mobile_name = request.GET.get('mobile-number')
+    print(mobile_name)
+    with BytesIO() as b:
+        gamification_login_df = gamification_login(mobile_name)
+        return JsonResponse({'Success':gamification_login_df})
+
+def read_sheet_wrapper(request):
+    file_name = request.GET.get('file-name')
+    print(file_name)
+    worksheet_name = request.GET.get('worksheet-name')
+    print(worksheet_name)
+    with BytesIO() as b:
+        read_sheet_df = read_sheet(file_name, worksheet_name)
+        return JsonResponse({'Success':read_sheet_df})

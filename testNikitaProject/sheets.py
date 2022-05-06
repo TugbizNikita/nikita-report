@@ -161,9 +161,6 @@ def read_wpa_report(file_name, download):
     #return {'weeklyAvgStats': avg_technical_week_wise, 'allData': df.to_dict('records')}
 
     return result
-
-
-
 # print(json.dumps(read_wpa_report(event={'body': '{"Name": "WPR-BI V5-DB ETL Testing Dec 21st Batch-Updated on 24-Jan-22", "WS_Number": "0", "emp_id": "all", "emp_col_number": "5"}'}, context=None), indent=4))
 
 def avg_finder(x):
@@ -236,7 +233,6 @@ def read_consolidated_report(file_name, download):
     file = client.open(file_names[file_name])
     
     m1_imp_report = read_m1_improvement_report(file=file)
-    print("m1_imp_report", m1_imp_report)
     is_improvement_empty = m1_imp_report['is_Empty']
     improvement_stats = 'No Data'
     if is_improvement_empty == False:
@@ -246,7 +242,6 @@ def read_consolidated_report(file_name, download):
         improvement_stats = m1_imp_report['stats']
 
     m2_report = read_m2_report(file=file)
-    print("m2_report", m2_report)
     is_m2_report_empty = m2_report['is_Empty']
     M2_report_stats = 'No Data'
     if is_m2_report_empty == False:
@@ -256,7 +251,6 @@ def read_consolidated_report(file_name, download):
         M2_report_stats = m2_report['stats']
 
     m2_imp_report = read_m2_improvement_report(file=file)
-    print("m2_imp_report", m2_imp_report)
     is_m2_improvement_empty = m2_imp_report['is_Empty']
     improvement_stats_m2 = 'No Data'
     if is_m2_improvement_empty == False:
@@ -274,8 +268,36 @@ def read_consolidated_report(file_name, download):
         shadow_df = shadow_report['df']
         shadow_stats = shadow_report['stats']
 
-    M1_sheet = file.worksheet('CG_M1')
+    pre_assessment_report = read_pre_assessment(file=file)
+    is_pre_assessment_empty = pre_assessment_report['is_Empty']
+    pre_assessment_stats = 'No Data'
+    if is_pre_assessment_empty == False:
+        if pre_assessment_report['stats']['Exam_Details'] != None:
+            pre_assessment_stats = pre_assessment_report['stats']['Exam_Details']
+        pre_assessment_df = pre_assessment_report['df']
+        pre_assessment_stats = pre_assessment_report['stats']
+    
+    post_assessment_report = read_post_assessment(file=file)
+    is_post_assessment_empty = post_assessment_report['is_Empty']
+    post_assessment_stats = 'No Data'
+    if is_post_assessment_empty == False:
+        if post_assessment_report['stats']['Exam_Details'] != None:
+            post_assessment_stats = post_assessment_report['stats']['Exam_Details']
+        post_assessment_df = post_assessment_report['df']
+        post_assessment_stats = post_assessment_report['stats']
 
+    Candidate_sheet = file.worksheet('Candidate_Details')
+    full_data = Candidate_sheet.get_all_values()
+    candidate_details_list = full_data[0:9]
+    data = full_data[10:]
+    headers = full_data[9]
+    candidate_df = pd.DataFrame(data, columns=headers)
+    candidate_df['Capgemini Email ID'] = candidate_df['Capgemini Email ID'].str.upper() # this is M1 df
+    Candidate_df = pd.DataFrame()
+    Candidate_df['Email Id'] = candidate_df['Capgemini Email ID']
+    Candidate_df['EmpID'] = candidate_df['EmpID']
+
+    M1_sheet = file.worksheet('CG_M1')
     full_data = M1_sheet.get_all_values()
     exam_details_list = full_data[0:9]
     data = full_data[10:]
@@ -288,19 +310,7 @@ def read_consolidated_report(file_name, download):
     M1_df['EmpID'] = df['EmpID']
     M1_df['M1'] = df['TOTAL']
     
-    # M2_sheet = file.worksheet('CG_M2')
-
-    # full_data = M2_sheet.get_all_values()
-    # exam_details_list = full_data[0:9]
-    # data = full_data[10:]
-    # headers = full_data[9]
-    # df = pd.DataFrame(data, columns=headers)
-    # df['Capgemini Email ID'] = df['Capgemini Email ID'].str.upper() # this is M2 df
-
-    # M2_df = pd.DataFrame()
-    # M2_df['Email Id'] = df['Capgemini Email ID']
-    # M2_df['EmpID'] = df['EmpID']
-    # M2_df['M2'] = df['TOTAL']
+    candidate_df_with_M1 = pd.merge(Candidate_df , M1_df, on='Email Id', how='left')
 
     NV_Stats = {'NV1': None, 'NV2': None, 'NV3': None, 'NV4': None,
                 'NV5': None, 'NV6': None, 'NV7': None, 'NV8': None}
@@ -318,10 +328,9 @@ def read_consolidated_report(file_name, download):
     nv_all_exam_data = nv_all_exam_data.fillna(0)
     nv_all_exam_data['Avg_Of_NV'] = nv_all_exam_data.apply(
         lambda row: avg_finder(row), axis=1)
-    
 
     nv_all_exam_data_with_m1 = pd.merge(
-        M1_df, nv_all_exam_data, on='Email Id', how='left')
+        candidate_df_with_M1, nv_all_exam_data, on='Email Id', how='left')
 
     
     nv_all_exam_data_with_m1['Difference_M1_and_NV'] = nv_all_exam_data_with_m1['M1'].apply(pd.to_numeric, errors='coerce') - \
@@ -335,19 +344,19 @@ def read_consolidated_report(file_name, download):
         nv_all_exam_data_with_m1 = pd.merge(nv_all_exam_data_with_m1, m2_report_df, on='Email Id', how='left')    
     if is_m2_improvement_empty == False:
         nv_all_exam_data_with_m1 = pd.merge(nv_all_exam_data_with_m1, m2_improvement_stats_df, on='Email Id', how='left') 
+    if is_pre_assessment_empty == False:
+        nv_all_exam_data_with_m1 = pd.merge(nv_all_exam_data_with_m1, pre_assessment_df, on='Email Id', how='left')
+    if is_post_assessment_empty == False:
+        nv_all_exam_data_with_m1 = pd.merge(nv_all_exam_data_with_m1, post_assessment_df, on='Email Id', how='left')
     
 
     name_email_df = pd.DataFrame()
-    name_email_df['Name'] = df['Name']
-    name_email_df['Email Id'] = df['Capgemini Email ID']
+    name_email_df['Name'] = candidate_df['Name']
+    name_email_df['Email Id'] = candidate_df['Capgemini Email ID']
 
     nv_all_exam_data = pd.merge(
         name_email_df, nv_all_exam_data_with_m1, on='Email Id', how='left')
 
-    # nv_all_exam_data = pd.merge(
-    #     nv_all_exam_data, M2_df, on='Email Id', how='left')
-    # nv_all_exam_data.to_excel("output.xlsx",
-            #  sheet_name='Sheet_name_1')
     sprint_1_data = 'No Data'
     sprint_2_data = 'No Data'
 
@@ -455,16 +464,18 @@ def read_consolidated_report(file_name, download):
             "55-59.99": round(len(
             fail_df.loc[(fail_df['TOTAL'].apply(pd.to_numeric) >= 55) & (fail_df['TOTAL'].apply(pd.to_numeric) < 60)].index) / (fail_df.shape[0]) * 100, 2),
         }
-
+    
+    
     if download == True:
         result = {'df':nv_all_exam_data, 'sheet_name': b_info['CFMG Code']}
     else:
         result = {'M1': {'Pass': Pass, 'Fail': fail, 'Drop_Out': drop_out, 'Absent': absent, 'Not_Able_To_Submit': not_able_to_submit, 'Avg_Pass_Mark': round(avg_pass_mark, 2),
                         'Avg_Fail_Mark': round(avg_fail_mark, 2), 'Pass_Percentage': pass_percentage, 'Fail_Percentage': fail_percentage},'Improvent_M1': improvement_stats, 
                         'NV': NV_Stats, 'Sprint_1': sprint_1_data, 'Sprint_2': sprint_2_data, 'All_Exam_Data': nv_all_exam_data_json, 'T_info': t_info, "B_info": b_info, 
-                        'Shadow_Stats': shadow_stats, 'M2_stats' : M2_report_stats, 'Improvement_M2':improvement_stats_m2}
+                        'Shadow_Stats': shadow_stats, 'M2_stats' : M2_report_stats, 'Improvement_M2':improvement_stats_m2, 'pre_assessment_stats': pre_assessment_stats, 
+                        'post_assessment_stats': post_assessment_stats}
 
-    print('nv_all_exam_data', nv_all_exam_data)
+    
     nv_all_exam_data.to_csv('output.csv', index = False)
     return result
 #read_consolidated_report('b4',True)
@@ -484,7 +495,7 @@ def read_nv_report(sheet, exam_name, df_list_of_nv):
     data = full_data[10:]
     headers = full_data[9]
     df = pd.DataFrame(data, columns=headers)
-    df['Exam Name'] = exam_name
+    df['Exam Name'] = exam_name+"Coding"
     df['Email Id'] = df['Email Id'].str.upper()
     
     df_list_of_nv.append(df)
@@ -645,7 +656,7 @@ def read_m1_improvement_report(file):
             
         }
         
-    df = df[['Capgemini Email ID', 'Improvement_Total']].copy()
+    df = df[['Capgemini Email ID', 'Improvement_Total', 'Final MCQ Score', 'Final Coding Score']].copy()
     
     df = df.rename(
         columns={'Capgemini Email ID': 'Email Id'})
@@ -814,7 +825,6 @@ def read_m2_improvement_report(file):
         'is_Empty': False
     }
 
-
 def read_shadow_project(file):
     try:
         sheet = file.worksheet('Shadow_Project')
@@ -835,9 +845,6 @@ def read_shadow_project(file):
     # display(df)
     df = df[['Marks', 'Email Id']].copy()
     df = df.rename({'Marks': 'Shadow_Project'}, axis=1)
-
-
-
     return {
         'is_Empty': False,
         'stats':{
@@ -850,11 +857,71 @@ def read_shadow_project(file):
     }
 
 
+def read_pre_assessment(file):
+    try:
+        sheet = file.worksheet('Pre_Assessment')
+    except:
+        return {'is_Empty': True, 'df': None, 'stats': None}
+    full_data = sheet.get_all_values()
+    pre_assessment_details_list = full_data[0:9]
+    pre_assessment_details = {}
+    for i in range(len(pre_assessment_details_list)):
+        if pre_assessment_details_list[i][0] != '':
+            pre_assessment_details[pre_assessment_details_list[i][0].strip()] = pre_assessment_details_list[i][1].strip()
+    if pre_assessment_details['Status'] != 'Done':
+        return {'is_Empty': True, 'stats':{'Exam Details': pre_assessment_details}, 'df': None}
 
+    data = full_data[10:]
+    headers = full_data[9]
+    df = pd.DataFrame(data, columns=headers)
+    # display(df)
+    df = df[['Marks', 'Email ID']].copy()
+    df = df.rename({'Marks': 'Pre_Assessment'}, axis=1)
+    df = df.rename({'Email ID': 'Email Id'}, axis=1)
+    return {
+        'is_Empty': False,
+        'stats':{
+            'Exam_Details': pre_assessment_details, 
+            'Absent': len(df.loc[df['Pre_Assessment'] == 'AB'].index),
+            'Drop_Out': len(df.loc[df['Pre_Assessment'] == 'DO'].index),
+            'Total': df.shape[0]
+        },
+        'df': df
+    }
 
+def read_post_assessment(file):
+    try:
+        sheet = file.worksheet('Post_Assessment')
+    except:
+        return {'is_Empty': True, 'df': None, 'stats': None}
+    full_data = sheet.get_all_values()
+    post_assessment_details_list = full_data[0:9]
+    post_assessment_details = {}
+    for i in range(len(post_assessment_details_list)):
+        if post_assessment_details_list[i][0] != '':
+            post_assessment_details[post_assessment_details_list[i][0].strip()] = post_assessment_details_list[i][1].strip()
+    if post_assessment_details['Status'] != 'Done':
+        return {'is_Empty': True, 'stats':{'Exam Details': post_assessment_details}, 'df': None}
 
+    data = full_data[10:]
+    headers = full_data[9]
+    df = pd.DataFrame(data, columns=headers)
+    # display(df)
+    df = df[['Marks', 'Email ID']].copy()
+    df = df.rename({'Marks': 'Post_Assessment'}, axis=1)
+    df = df.rename({'Email ID': 'Email Id'}, axis=1)
+    return {
+        'is_Empty': False,
+        'stats':{
+            'Exam_Details': post_assessment_details, 
+            'Absent': len(df.loc[df['Post_Assessment'] == 'AB'].index),
+            'Drop_Out': len(df.loc[df['Post_Assessment'] == 'DO'].index),
+            'Total': df.shape[0]
+        },
+        'df': df
+    }
 
 #print(json.dumps(read_consolidated_report(input('Enter Name: ')), indent=4))
 # print(read_consolidated_report('b4'))
 
-read_consolidated_report('C1',False)
+read_consolidated_report('L2',True)

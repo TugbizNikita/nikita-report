@@ -310,7 +310,7 @@ def read_batch_lsr(file_name, download):
     column_names = ["Vendor", "Sr.No", "LOT","Variant","Batch Name","CFMG Batch Code","Batch Type","Location","Start Date","End Date","Initial Batch Size","Dropout/Abscondee Count","Transfer-Out Count","Transfer-In Count","Current Batch Size","Batch Mentor","Learning status","Above Average Pax Count", "Average Pax Count", "Below Average Pax Count", "DO", "NA"]
     lsr_data_df = lsr_data_df.reindex(columns=column_names) 
     lsr_data_json = lsr_data_df.to_json(orient = 'records')
-    lsr_data_df.to_csv('L18WSR.csv', index = False)
+    lsr_data_df.to_csv('L3WSR.csv', index = False)
     CFMG_Code = batch_info_df['CFMG Code']
     CFMG_Code = CFMG_Code.get(0)
     if download == True:
@@ -320,10 +320,9 @@ def read_batch_lsr(file_name, download):
     
     return result
 
-read_batch_lsr('L18',True)
+read_batch_lsr('L3',True)
 
 #read_batch_candidates('C1')
-
 
 def read_lsr(file_name):
     file_names = {

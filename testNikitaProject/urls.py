@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from .views import index, wpr_report, download_consolidated_report, wsr_report, download_wsr, download_attendance, download_wpr_report, validate_wsr, validate_consolidated_sheet, validate_candidates, wpr_stats_comm, attendance_stats, student_all_data, validate_wsr, validate_wpr,leadership, validate_consolidated
+from .views import index, wpr_report, download_consolidated_report, wsr_report, download_wsr, download_attendance, download_wpr_report, validate_wsr, validate_consolidated_sheet, validate_candidates, wpr_stats_comm, attendance_stats, student_all_data, validate_wsr, validate_wpr,leadership, validate_consolidated, gamification_registration1, gamification_login1,read_sheet_wrapper
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index),
@@ -35,5 +35,9 @@ urlpatterns = [
     #path('validateWSR/', validate_wsr),
     path('validateConsolidated/',validate_consolidated_sheet),
     path('leadership/',leadership),
+    path('gamification_registration/', gamification_registration1),
+    path('gamification_login/', gamification_login1),
+    path('read_sheet/', read_sheet_wrapper),
+    
     
 ]
